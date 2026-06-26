@@ -51,3 +51,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 每次重要解答后，将核心内容整理为 Markdown 文件，存入 `notes/` 目录
 - 文件命名格式：`主题-关键词.md`，例如 `prompt-基础写法.md`
 - 知识点尽量短小精悍，方便日后快速回顾
+
+---
+
+## 目录结构
+
+```
+code/                  ← 所有代码（示例 + 项目）
+  min_agent/           ← 最小 Agent Loop 实现
+  tests/               ← 单元测试（cd code && pytest tests/）
+  calculator_agent.py  ← 示例：计算器 Agent
+  todo_agent.py        ← 示例：Todo Agent
+notes/                 ← 知识沉淀文档
+docs/                  ← 计划文档等
+```
