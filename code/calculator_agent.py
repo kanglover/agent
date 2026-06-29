@@ -54,51 +54,100 @@ def execute_tool(tool_name, tool_input):
 
 
 # ===== 3. 主流程 =====
+def _initialize_conversation(user_question: str):
+    """
+    初始化对话历史，打印用户问题
+
+    Args:
+        user_question: 用户输入的问题
+
+    Returns:
+        初始化后的 messages 列表
+    """
+    messages = [{"role": "user", "content": user_question}]
+    print(f"👤 用户：{user_question}\n")
+    return messages
+
+
+def _call_ai_model(messages: list):
+    """
+    调用 AI 模型进行推理
+
+    Args:
+        messages: 对话历史列表
+
+    Returns:
+        AI 模型的响应对象
+    """
+    response = client.messages.create(
+        model="claude-opus-4-6",
+        max_tokens=1024,
+        tools=tools,
+        messages=messages
+    )
+    return response
+
+
+def _handle_final_answer(response) -> str:
+    """
+    处理 AI 返回最终答案的情况
+
+    Args:
+        response: AI 模型响应对象
+
+    Returns:
+        AI 返回的最终答案文本
+    """
+    answer = response.content[0].text
+    print(f"✅ 最终回答：{answer}")
+    return answer
+
+
+def _execute_tool_requests(response, messages: list) -> list:
+    """
+    执行 AI 请求的工具调用，将工具结果加入对话历史
+
+    Args:
+        response: AI 模型响应对象
+        messages: 对话历史列表（会被修改，加入 AI 回复和工具结果）
+
+    Returns:
+        工具执行结果列表
+    """
+    messages.append({"role": "assistant", "content": response.content})
+
+    tool_results = []
+    for block in response.content:
+        if block.type == "tool_use":
+            print(f"🔧 AI 使用工具：{block.name}")
+            print(f"   参数：{block.input}")
+
+            result = execute_tool(block.name, block.input)
+            print(f"   结果：{result}\n")
+
+            tool_results.append({
+                "type": "tool_result",
+                "tool_use_id": block.id,
+                "content": result
+            })
+
+    messages.append({"role": "user", "content": tool_results})
+    return tool_results
+
+
 def run_calculator_agent(user_question: str):
     """运行计算器 Agent，接受用户问题，返回最终答案"""
 
-    messages = [{"role": "user", "content": user_question}]
-
-    print(f"👤 用户：{user_question}\n")
+    messages = _initialize_conversation(user_question)
 
     while True:
-        # 让 AI 思考
-        response = client.messages.create(
-            model="claude-opus-4-8",
-            max_tokens=1024,
-            tools=tools,
-            messages=messages
-        )
+        response = _call_ai_model(messages)
 
-        # 情况一：AI 完成了任务，给出最终答案
         if response.stop_reason == "end_turn":
-            answer = response.content[0].text
-            print(f"✅ 最终回答：{answer}")
-            return answer
+            return _handle_final_answer(response)
 
-        # 情况二：AI 想用工具
         if response.stop_reason == "tool_use":
-            # 把 AI 的回应记录到历史
-            messages.append({"role": "assistant", "content": response.content})
-
-            # 执行 AI 请求的每一个工具
-            tool_results = []
-            for block in response.content:
-                if block.type == "tool_use":
-                    print(f"🔧 AI 使用工具：{block.name}")
-                    print(f"   参数：{block.input}")
-
-                    result = execute_tool(block.name, block.input)
-                    print(f"   结果：{result}\n")
-
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
-                        "content": result
-                    })
-
-            # 把工具结果告诉 AI
-            messages.append({"role": "user", "content": tool_results})
+            _execute_tool_requests(response, messages)
 
 
 # ===== 运行示例 =====

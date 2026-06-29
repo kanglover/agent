@@ -29,11 +29,13 @@ def execute_tool(tool_name, tool_input):
     """执行 AI 请求的工具，返回结果字符串"""
     if tool_name == "read_file":
         filename = tool_input["filename"]
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        filepath = os.path.join(script_dir, filename)
         try:
-            with open(filename, "r", encoding="utf-8") as f:
+            with open(filepath, "r", encoding="utf-8") as f:
                 return f.read()
         except FileNotFoundError:
-            return f"错误：找不到文件 {filename}，请确认文件存在"
+            return f"错误：找不到文件 {filepath}，请确认文件存在"
     return f"未知工具：{tool_name}"
 
 
@@ -59,7 +61,7 @@ def run_todo_agent():
 
     while True:
         response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model="claude-opus-4-8",
             max_tokens=2048,
             tools=tools,
             messages=messages
