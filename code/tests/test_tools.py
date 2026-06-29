@@ -1,7 +1,6 @@
 # code/tests/test_tools.py
 import json
 import pytest
-from unittest.mock import patch
 from min_agent.tools import search_notes, write_summary, run_tool, TOOL_DEFINITIONS
 
 
