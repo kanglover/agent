@@ -1,0 +1,71 @@
+{
+  "name": "agent-examples-node",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "前端转 Agent 开发 Node.js 示例集合（01~20，涵盖 Anthropic SDK、LangChain、LangGraph、Vercel AI SDK、MCP、OpenAI Agents SDK）",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "01": "node 01_hello_claude.js",
+    "02": "node 02_tool_use_basic.js",
+    "03": "node 03_react_agent.js",
+    "04": "node 04_memory_management.js",
+    "05": "node 05_rag_simple.js",
+    "06": "node 06_rag_advanced.js",
+    "07": "node 07_streaming.js",
+    "08": "node 08_error_handling.js",
+    "09": "node 09_context_engineering.js",
+    "10": "node 10_production_agent.js",
+    "11": "node 11_langchain_basics.js",
+    "12": "node 12_langchain_agents.js",
+    "13": "node 13_langgraph_basics.js",
+    "14": "node 14_langgraph_react_agent.js",
+    "15": "node 15_langgraph_multiagent.js",
+    "16": "node 16_vercel_ai_sdk.js",
+    "17": "node 17_ai_sdk_advanced.js",
+    "18": "node 18_mcp_client.js",
+    "19": "node 19_openai_agents_sdk.js",
+    "20": "node 20_production_patterns.js"
+  },
+  "dependencies": {
+    "//sdk-官方":        "─── 示例 01-10、18：直接调用 Claude API 的最底层方式 ─────────────",
+    "@anthropic-ai/sdk": "^0.40.0",
+
+    "//vercel-ai-sdk":   "─── 示例 16-17：前端友好的统一 AI SDK ─────────────────────────────",
+    "ai":                "^4.0.0",
+    "@ai-sdk/anthropic": "^1.0.0",
+    "@ai-sdk/openai":    "^1.0.0",
+
+    "//mcp":             "─── 示例 18：MCP 客户端，连接 MCP Server ─────────────────────────",
+    "@modelcontextprotocol/sdk": "^1.0.0",
+
+    "//openai-agents":   "─── 示例 19：OpenAI Agents SDK，轻量级多 Agent 框架 ──────────────",
+    "@openai/agents":    "^0.0.11",
+
+    "//langchain":       "─── 示例 11-12：LangChain 核心 + Anthropic 适配层 ──────────────────",
+    "@langchain/anthropic": "^0.3.0",
+    "@langchain/core":   "^0.3.0",
+    "@langchain/community": "^0.3.0",
+    "langchain":         "^0.3.0",
+
+    "//langgraph":       "─── 示例 13-15：LangGraph 状态机 / 多 Agent 有向图 ──────────────────",
+    "@langchain/langgraph": "^0.2.0",
+
+    "//rag":             "─── 示例 05-06：RAG 向量检索 ──────────────────────────────────────",
+    "faiss-node":        "^0.5.1",
+
+    "//utils":           "─── 通用工具库 ─────────────────────────────────────────────────────",
+    "zod":               "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0"
+  },
+  "_quickStart": {
+    "1_安装依赖": "cd code/examples/node && npm install",
+    "2_设置Key": "export ANTHROPIC_API_KEY=sk-ant-xxxxxxxx",
+    "3_运行示例": "npm run 16   （或任意编号，如 npm run 01）",
+    "前端推荐路径": "16（Vercel AI SDK）→ 17（AI SDK 进阶）→ 18（MCP）→ 19（Agents SDK）→ 20（生产模式）",
+    "零基础路径":   "01（Hello Claude）→ 02（工具调用）→ 03（ReAct Agent）→ 07（流式输出）→ 10（生产 Agent）"
+  }
+}

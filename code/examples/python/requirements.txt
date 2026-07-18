@@ -1,0 +1,95 @@
+# ─────────────────────────────────────────────────────────────
+# Python 示例依赖清单
+# 覆盖范围：示例 09 ~ 25
+#
+# 安装全部依赖（建议在虚拟环境中执行）：
+#   pip install -r requirements.txt
+#
+# 按需安装（只装自己用到的示例）：
+#   pip install anthropic                        # 仅运行基础示例
+#   pip install anthropic langchain-anthropic    # 加 LangChain 示例
+# ─────────────────────────────────────────────────────────────
+
+
+# ─── Claude / Anthropic API ───────────────────────────────────
+anthropic>=0.40.0
+# 用到：09（上下文工程）、10（生产 Agent）、11（LangChain 基础）、
+#        19（MCP 客户端）、20（结构化输出）、22（Vision 多模态）、
+#        23（批量处理）、24（Token 预算控制）、25（Prompt Caching）
+
+
+# ─── Web 框架 & 服务化 ────────────────────────────────────────
+fastapi>=0.110.0
+# 用到：10（生产 Agent：REST API 服务化）
+
+uvicorn[standard]>=0.29.0
+# 用到：10（生产 Agent：ASGI 服务器运行 FastAPI）
+
+httpx>=0.27.0
+# 用到：10（生产 Agent：异步 HTTP 客户端）、18（MCP Server 内置 HTTP 工具）
+
+
+# ─── 数据验证 ─────────────────────────────────────────────────
+pydantic>=2.7.0
+# 用到：10（生产 Agent：请求/响应模型）、20（结构化输出：强类型解析）
+
+pydantic-settings>=2.3.0
+# 用到：10（生产 Agent：从环境变量加载配置）
+
+
+# ─── LangChain 生态 ───────────────────────────────────────────
+langchain>=0.2.0
+# 用到：12（LangChain Agents：AgentExecutor、hub、ConversationBufferMemory）
+
+langchain-core>=0.2.0
+# 用到：11（LangChain 基础：Prompt / OutputParser / Runnable）、
+#        12（LangChain Agents：BaseTool / tool 装饰器）、
+#        14（LangGraph ReAct Agent：messages 类型）、
+#        15（LangGraph 多 Agent：messages / StateGraph）
+
+langchain-anthropic>=0.1.20
+# 用到：11（LangChain 基础：ChatAnthropic 聊天模型）、
+#        14（LangGraph ReAct Agent：ChatAnthropic 作为 LLM 后端）
+
+langchain-openai>=0.1.0
+# 用到：12（LangChain Agents：ChatOpenAI 调用 OpenAI 兼容接口）、
+#        15（LangGraph 多 Agent：ChatOpenAI 作为备用 LLM）
+
+
+# ─── LangGraph ────────────────────────────────────────────────
+langgraph>=0.2.0
+# 用到：13（LangGraph 基础：StateGraph 有向图编排）、
+#        14（LangGraph ReAct Agent：ToolNode / MemorySaver）、
+#        15（LangGraph 多 Agent：多节点 StateGraph + 消息传递）
+
+
+# ─── AutoGen（微软多 Agent 框架）─────────────────────────────
+pyautogen>=0.2.0
+# 用到：16（AutoGen 多 Agent：AssistantAgent / UserProxyAgent / GroupChat）
+# 注意：若需要代码执行沙箱，额外安装：pip install pyautogen[local-executor]
+
+
+# ─── CrewAI ───────────────────────────────────────────────────
+crewai>=0.28.0
+# 用到：17（CrewAI 基础：Agent / Task / Crew / tool 装饰器）
+
+
+# ─── MCP（Model Context Protocol）────────────────────────────
+mcp>=1.0.0
+# 用到：18（MCP Server：Server / stdio_server / mcp.types）、
+#        19（MCP Client：ClientSession / StdioServerParameters / stdio_client / sse_client）
+
+
+# ─── Embedding & 向量数据库 ───────────────────────────────────
+chromadb>=0.5.0
+# 用到：21（Embedding + 向量存储：ChromaDB 内存/持久化客户端、CRUD、元数据过滤）
+
+openai>=1.30.0
+# 用到：12（通过 langchain-openai 间接依赖）、
+#        21（Embedding + 向量存储：OpenAI Embedding API text-embedding-3-small）
+
+voyageai>=0.2.3
+# 用到：21（Embedding + 向量存储：Voyage AI Embedding API，高精度检索）
+
+numpy>=1.26.0
+# 用到：21（Embedding + 向量存储：余弦相似度 / 点积 / 欧氏距离计算）
