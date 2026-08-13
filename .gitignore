@@ -68,3 +68,11 @@ docs/superpowers/
 # 个人脚本（含账号信息，不上传）
 # ===========================
 git-profile.sh
+
+# Model files
+*.h5
+*.pt
+*.pth
+*.ckpt
+*.pkl
+*.faiss
