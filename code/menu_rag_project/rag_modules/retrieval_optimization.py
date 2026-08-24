@@ -5,6 +5,7 @@ from typing import Any
 from langchain_community.vectorstores import FAISS
 from langchain_community.retrievers import BM25Retriever
 from langchain_core.documents import Document
+from sentence_transformers import CrossEncoder
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,9 @@ class RetrievalOptimizationModule:
         # BM25 检索
         self.bm25_retriever = BM25Retriever.from_documents(self.documents, k=5)
 
+        # reranker 重排模型
+        self.reranker = CrossEncoder("BAAI/bge-reranker-v2-m3")
+
         logger.info("Retrievers setup completed")
 
     def hybrid_search(self, query: str, top_k: int = 3) -> list[Document]:
@@ -59,7 +63,10 @@ class RetrievalOptimizationModule:
 
         # RRF 重排
         reranked_docs = self.rrf_rerank(vector_results, bm25_results)
-        return reranked_docs[:top_k]
+        # return reranked_docs[:top_k]
+
+        candidates = reranked_docs[:top_k * 3]
+        return self._rerank(query, candidates, top_k=top_k)
 
     def metadata_filtered_search(
         self, query: str, filters: dict[str, Any], top_k: int = 5
@@ -145,3 +152,27 @@ class RetrievalOptimizationModule:
             f"RRF reranking completed, returning reranked {len(reranked_docs)} documents"
         )
         return reranked_docs
+
+    def _rerank(self, query: str, docs: list[Document], top_k: int) -> list[Document]:
+        """Cross-Encoder 精排"""
+        if not docs:
+            return []
+
+        # 构造 (query, document) 对
+        pairs = [(query, doc.page_content) for doc in docs]
+
+        # 批量打分
+        scores = self.reranker.predict(pairs)
+
+        # 按分数降序排列，取 top_k
+        scored_docs = sorted(zip(docs, scores), key=lambda x: x[1], reverse=True)
+
+        # 可选：设置最低分数阈值
+        THRESHOLD = 0.1
+        final = [doc for doc, score in scored_docs[:top_k] if score > THRESHOLD]
+
+        # 将精排分数写入 metadata（便于调试和日志）
+        for doc, score in scored_docs[:top_k]:
+            doc.metadata["rerank_score"] = float(score)
+
+        return final
