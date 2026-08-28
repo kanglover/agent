@@ -11,7 +11,6 @@ code/
 ├── calculator_agent.py   ← 入门示例：给 AI 配一个计算器
 ├── todo_agent.py         ← 实用示例：让 AI 读文件、分析待办清单
 ├── todo.md               ← todo_agent 使用的待办清单样本
-├── trace.jsonl           ← 运行 min_agent 后产生的执行日志
 │
 ├── min_agent/            ← 最小 Agent Loop 实现（核心）
 │   ├── main.py           ← 入口：批量运行预设任务

@@ -28,7 +28,6 @@ agent/
 │   ├── todo_agent.py            ← 实用：读文件分析待办清单
 │   ├── demo_qwen.py             ← 通义千问 + Gradio 对话界面
 │   ├── qwen_embedding_demo.py   ← 通义千问 Embedding 示例
-│   ├── tools_v1.py / tools_v2.py← 工具设计对比（基础版 vs 增强版）
 │   └── tests/                   ← 单元测试
 │
 ├── notes/                       ← 阅读笔记与知识沉淀（38 篇）
@@ -64,19 +63,6 @@ agent/
 ```
 
 关键设计：最大 5 步防无限循环、每步写 JSONL trace（含 token 费用估算）、出错不崩溃返回结构化失败原因。
-
-### 工具层设计对比（`tools_v1.py` vs `tools_v2.py`）
-
-同一套工具两种设计风格，直观对比「写给 API 的工具」和「写给 AI 的工具」：
-
-| | 基础版（v1） | 增强版（v2） |
-|--|------------|------------|
-| 返回格式 | 纯字符串 | 结构化 JSON |
-| 出错时 | raise / 模糊文字 | 错误码 + `next_action` |
-| 分页 | ❌ | ✅ `max_results` |
-| 截断 | ❌ | ✅ `MAX_CHARS_PER_RESULT` |
-| 重试 | ❌ | ✅ 带退避的重试 |
-| 高风险标记 | ❌ | ✅ `requires_confirmation` |
 
 ### 上下文工程（`context_builder/`）
 
