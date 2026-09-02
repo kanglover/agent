@@ -17,7 +17,9 @@
 menu_rag_project/
 ├── main.py                  # 入口：RecipeRAGSystem 编排类 + 交互式问答循环
 ├── config.py                # RAGConfig 配置（数据路径、模型、top_k 等）
-├── requirements.txt         # Python 依赖
+├── pyproject.toml            # uv 项目与依赖声明
+├── uv.lock                   # 依赖锁定文件（uv sync 还原）
+├── requirements.txt          # 依赖清单（pyproject 同源，兼容 pip）
 ├── .env                     # API 密钥与模型配置（不入库）
 ├── rag_modules/
 │   ├── data_preparation.py      # 数据准备：加载 323 份菜谱 md，父子分块，提取元数据
@@ -41,20 +43,13 @@ menu_rag_project/
 
 ## 环境准备
 
-### 1. 创建虚拟环境（Python 3.12+）
+项目使用 [uv](https://docs.astral.sh/uv/) 管理依赖（`pyproject.toml` + `uv.lock`）。
+
+### 1. 创建虚拟环境并安装依赖（Python 3.12+）
 
 ```bash
 cd projects/menu_rag_project
-uv venv --python 3.12 .venv
-uv pip install -r requirements.txt --python .venv/bin/python
-```
-
-或使用原生 venv：
-
-```bash
-python3.12 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+uv sync          # 按 uv.lock 精确还原依赖到 .venv
 ```
 
 > 首次运行会从 HuggingFace 下载 embedding 与 reranker 模型（各几百 MB），建议提前配置代理或 `HF_ENDPOINT` 镜像。
