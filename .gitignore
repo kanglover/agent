@@ -76,3 +76,13 @@ git-profile.sh
 *.ckpt
 *.pkl
 *.faiss
+*.bin
+*.safetensors
+*.gguf
+*.onnx
+*.model
+*.npz
+*.msgpack
+
+
+docker/embedding/
