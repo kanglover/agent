@@ -1,0 +1,42 @@
+{
+  "folders": [
+    {
+      "name": "Root",
+      "path": "."
+    },
+    {
+      "name": "code",
+      "path": "code"
+    },
+    {
+      "name": "menu_rag_project",
+      "path": "projects/menu_rag_project"
+    },
+    {
+      "name": "ec_bot",
+      "path": "projects/ec_bot"
+    }
+  ],
+  "settings": [
+    {
+      "id": "root",
+      "name": "Root",
+      "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"
+    },
+    {
+      "id": "code",
+      "name": "code",
+      "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"
+    },
+    {
+      "id": "menu_rag_project",
+      "name": "menu_rag_project",
+      "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"
+    },
+    {
+      "id": "ec_bot",
+      "name": "ec_bot",
+      "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"
+    }
+  ]
+}
