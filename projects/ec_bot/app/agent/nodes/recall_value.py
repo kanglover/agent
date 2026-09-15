@@ -3,7 +3,8 @@
 
 负责从字段值全文索引中召回候选取值
 当用户问题里出现店铺名 类目名 地区名等业务值时，这一步可以帮助定位真实字段和值
-实现路径和字段/指标召回不同：关键词扩展 -> Elasticsearch 全文检索 -> ValueInfo 去重
+实现路径和字段/指标召回不同：关键词扩展 -> 全文检索 -> ValueInfo 去重
+全文检索的具体落地是 ES 还是 MySQL，由 value_store.provider 配置决定，节点不感知
 """
 
 from langchain_core.output_parsers import JsonOutputParser
@@ -29,8 +30,8 @@ async def recall_value(state: DataAgentState, runtime: Runtime[DataAgentContext]
         # query 用于让 LLM 生成字段值层面的检索词，keywords 来自上游通用关键词抽取
         query = state["query"]
         keywords = state["keywords"]
-        # 字段取值更关注真实文本命中，因此这里走 Elasticsearch，而不是向量检索
-        value_es_repository = runtime.context["value_es_repository"]
+        # 字段取值更关注真实文本命中，因此这里走全文检索，而不是向量检索
+        value_repository = runtime.context["value_repository"]
 
         # 用 LLM 把用户问法扩展成“可能出现在字段值里的词”
         # 例如“华北地区”可以补充出“华北”，避免 SQL 条件值和真实存储值不一致
@@ -52,7 +53,7 @@ async def recall_value(state: DataAgentState, runtime: Runtime[DataAgentContext]
         # 用 ValueInfo.id 去重，避免多个关键词命中同一条字段值记录
         value_infos_map: dict[str, ValueInfo] = {}
         for keyword in keywords:
-            current_value_infos: list[ValueInfo] = await value_es_repository.search(
+            current_value_infos: list[ValueInfo] = await value_repository.search(
                 keyword
             )
             for current_value_info in current_value_infos:

@@ -28,11 +28,12 @@ from app.clients.mysql_client_manager import (
     meta_mysql_client_manager,
 )
 from app.clients.qdrant_client_manager import qdrant_client_manager
-from app.repositories.es.value_es_repository import ValueESRepository
+from app.conf.app_config import app_config
 from app.repositories.mysql.dw.dw_mysql_repository import DWMySQLRepository
 from app.repositories.mysql.meta.meta_mysql_repository import MetaMySQLRepository
 from app.repositories.qdrant.column_qdrant_repository import ColumnQdrantRepository
 from app.repositories.qdrant.metric_qdrant_repository import MetricQdrantRepository
+from app.repositories.value.value_repository_factory import create_value_repository
 
 
 graph_builder = StateGraph(state_schema=DataAgentState, context_schema=DataAgentContext)
@@ -94,12 +95,14 @@ if __name__ == "__main__":
     async def test():
         """本地调试关键词抽取和字段 指标 取值三路召回链路"""
 
-        # 多路召回和上下文补全会访问 Qdrant、Embedding、ES、Meta MySQL 和 DW MySQL
+        # 多路召回和上下文补全会访问 Qdrant、Embedding、Meta MySQL 和 DW MySQL
         qdrant_client_manager.init()
         embedding_client_manager.init()
-        es_client_manager.init()
         meta_mysql_client_manager.init()
         dw_mysql_client_manager.init()
+        # 取值召回走 ES 实现时才需要额外初始化 ES 客户端
+        if app_config.value_store.provider == "es":
+            es_client_manager.init()
 
         # Meta MySQL 用来补齐元数据，DW MySQL 用来读取数据库方言和版本
         async with (
@@ -109,14 +112,14 @@ if __name__ == "__main__":
             meta_mysql_repository = MetaMySQLRepository(meta_session)
             dw_mysql_repository = DWMySQLRepository(dw_session)
 
-            # 字段和指标分别使用不同 Qdrant collection，取值检索使用 ES index
+            # 字段和指标分别使用不同 Qdrant collection，取值检索由工厂按配置选择实现
             column_qdrant_repository = ColumnQdrantRepository(
                 qdrant_client_manager.client
             )
             metric_qdrant_repository = MetricQdrantRepository(
                 qdrant_client_manager.client
             )
-            value_es_repository = ValueESRepository(es_client_manager.client)
+            value_repository = create_value_repository(meta_session)
 
             # 当前只需要传入原始问题，后续节点会逐步写回召回、过滤和额外上下文结果
             # state = DataAgentState(query="统计华北地区的销售总额")
@@ -125,7 +128,7 @@ if __name__ == "__main__":
                 column_qdrant_repository=column_qdrant_repository,
                 embedding_client=embedding_client_manager.client,
                 metric_qdrant_repository=metric_qdrant_repository,
-                value_es_repository=value_es_repository,
+                value_repository=value_repository,
                 meta_mysql_repository=meta_mysql_repository,
                 dw_mysql_repository=dw_mysql_repository,
             )

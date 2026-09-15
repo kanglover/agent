@@ -4,6 +4,9 @@
 相当于构建流程的 controller 层，负责接收命令行参数 初始化客户端 创建仓储和服务对象
 再把真正的构建任务调度到 MetaKnowledgeService，它本身不承载复杂业务细节
 主要目标是把整条构建链路稳定地启动起来
+
+注意：依赖地址与凭据全部来自环境变量，所以同一份脚本既能构建本地容器，
+也能通过配置直接构建云端托管服务上的索引。
 """
 
 import argparse
@@ -17,11 +20,12 @@ from app.clients.mysql_client_manager import (
     meta_mysql_client_manager,
 )
 from app.clients.qdrant_client_manager import qdrant_client_manager
-from app.repositories.es.value_es_repository import ValueESRepository
+from app.conf.app_config import app_config
 from app.repositories.mysql.dw.dw_mysql_repository import DWMySQLRepository
 from app.repositories.mysql.meta.meta_mysql_repository import MetaMySQLRepository
 from app.repositories.qdrant.column_qdrant_repository import ColumnQdrantRepository
 from app.repositories.qdrant.metric_qdrant_repository import MetricQdrantRepository
+from app.repositories.value.value_repository_factory import create_value_repository
 from app.services.meta_knowledge_service import MetaKnowledgeService
 
 
@@ -36,14 +40,14 @@ async def build(config_path: Path):
     qdrant_client_manager.init()
     # 初始化Embedding客户端
     embedding_client_manager.init()
-    # 初始化Elasticsearch客户端
-    es_client_manager.init()
+    # 只有取值召回走 ES 时才需要初始化 ES 客户端，走 MySQL 全文索引时完全不用
+    if app_config.value_store.provider == "es":
+        es_client_manager.init()
 
     if not (
         meta_mysql_client_manager.session_factory
         and dw_mysql_client_manager.session_factory
         and qdrant_client_manager.client
-        and es_client_manager.client
         and embedding_client_manager.client
     ):
         return
@@ -58,7 +62,8 @@ async def build(config_path: Path):
         # 字段和指标分别写入不同的 Qdrant collection，后续可以独立召回
         column_qdrant_repository = ColumnQdrantRepository(qdrant_client_manager.client)
         embedding_client = embedding_client_manager.client
-        value_es_repository = ValueESRepository(es_client_manager.client)
+        # 取值索引表与元数据同库，因此直接复用 meta 会话
+        value_repository = create_value_repository(meta_session)
         metric_qdrant_repository = MetricQdrantRepository(qdrant_client_manager.client)
 
         # 创建 service 对象，并把 repository 注入进去
@@ -67,7 +72,7 @@ async def build(config_path: Path):
             dw_mysql_repository=dw_mysql_repository,
             column_qdrant_repository=column_qdrant_repository,
             embedding_client=embedding_client,
-            value_es_repository=value_es_repository,
+            value_repository=value_repository,
             metric_qdrant_repository=metric_qdrant_repository,
         )
 

@@ -1,0 +1,32 @@
+# 版本控制与本地开发环境，都不该进镜像
+.git
+.gitignore
+.gitattributes
+.venv
+.vscode
+.idea
+.claude
+.workbuddy
+.env
+.env.*
+
+# 编译产物
+__pycache__
+**/__pycache__
+*.py[cod]
+
+# macOS 元数据文件，别进镜像
+.DS_Store
+**/.DS_Store
+
+# 前端单独部署为静态站点，不进后端镜像
+frontend
+
+# 本地依赖编排脚本；注意这里同时排除了 1.2GB 的本地 Embedding 模型
+docker
+
+# 文档与运行期产物
+docs
+logs
+*.md
+*.log

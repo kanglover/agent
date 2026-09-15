@@ -18,15 +18,29 @@ class QdrantClientManager:
         self.client: Optional[AsyncQdrantClient] = None
 
     def __get_url(self) -> str:
-        """拼接 Qdrant 服务地址"""
-        return f"http://{self.qdrant_config.host}:{self.qdrant_config.port}"
+        """拼接 Qdrant 服务地址
+
+        本地容器走纯 http，托管集群只暴露 https 端点。
+        """
+        scheme = "https" if self.qdrant_config.use_https else "http"
+        return f"{scheme}://{self.qdrant_config.host}:{self.qdrant_config.port}"
 
     def init(self):
         """
         初始化 Qdrant 客户端
         这里不在 __init__ 中初始化，是为了和项目的生命周期管理保持一致
         """
-        self.client = AsyncQdrantClient(self.__get_url())
+        # 托管集群需要 api_key 鉴权并显式声明 https，本地容器两者都用不上
+        kwargs: dict = {
+            "url": self.__get_url(),
+            "timeout": self.qdrant_config.timeout,
+        }
+        if self.qdrant_config.api_key:
+            kwargs["api_key"] = self.qdrant_config.api_key
+        if self.qdrant_config.use_https:
+            kwargs["https"] = True
+
+        self.client = AsyncQdrantClient(**kwargs)
 
     async def close(self):
         """关闭 Qdrant 客户端连接"""

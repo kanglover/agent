@@ -1,42 +1,84 @@
+# 应用主配置
+#
+# 说明：所有外部依赖的地址与凭据统一通过环境变量注入（默认值对齐 docker-compose 的本地容器），
+# 这样同一份配置既能跑本地容器，也能直接指向云上的托管服务。
+# 变量清单见项目根目录的 .env.example。
 logging:
   file:
-    enable: true
-    level: INFO
-    path: logs
+    enable: ${oc.decode:${oc.env:LOG_FILE_ENABLE,true}}
+    level: ${oc.env:LOG_FILE_LEVEL,INFO}
+    path: ${oc.env:LOG_FILE_PATH,logs}
     rotation: "10 MB"
     retention: "7 days"
   console:
-    enable: true
-    level: INFO
+    enable: ${oc.decode:${oc.env:LOG_CONSOLE_ENABLE,true}}
+    level: ${oc.env:LOG_CONSOLE_LEVEL,INFO}
 
 db_meta:
-  host: localhost
-  port: 3306
-  user: admin
-  password: 123456
-  database: meta
+  host: ${oc.env:META_DB_HOST,localhost}
+  port: ${oc.decode:${oc.env:META_DB_PORT,3306}}
+  user: ${oc.env:META_DB_USER,admin}
+  password: ${oc.env:META_DB_PASSWORD,123456}
+  database: ${oc.env:META_DB_NAME,meta}
+  pool_size: ${oc.decode:${oc.env:META_DB_POOL_SIZE,10}}
+  pool_recycle: ${oc.decode:${oc.env:DB_POOL_RECYCLE,1800}}
+  ssl: ${oc.decode:${oc.env:META_DB_SSL,false}}
+  ssl_verify: ${oc.decode:${oc.env:DB_SSL_VERIFY,true}}
 
 db_dw:
-  host: localhost
-  port: 3306
-  user: admin
-  password: 123456
-  database: dw
+  host: ${oc.env:DW_DB_HOST,localhost}
+  port: ${oc.decode:${oc.env:DW_DB_PORT,3306}}
+  user: ${oc.env:DW_DB_USER,admin}
+  password: ${oc.env:DW_DB_PASSWORD,123456}
+  database: ${oc.env:DW_DB_NAME,dw}
+  pool_size: ${oc.decode:${oc.env:DW_DB_POOL_SIZE,10}}
+  pool_recycle: ${oc.decode:${oc.env:DB_POOL_RECYCLE,1800}}
+  ssl: ${oc.decode:${oc.env:DW_DB_SSL,false}}
+  ssl_verify: ${oc.decode:${oc.env:DB_SSL_VERIFY,true}}
 
 qdrant:
-  host: localhost
-  port: 6333
-  embedding_size: 1024
+  # local：本地 docker-compose 起的 qdrant；cloud：Qdrant Cloud 托管集群
+  provider: ${oc.env:QDRANT_PROVIDER,local}
+  host: ${oc.env:QDRANT_HOST,localhost}
+  port: ${oc.decode:${oc.env:QDRANT_PORT,6333}}
+  api_key: ${oc.env:QDRANT_API_KEY,""}
+  use_https: ${oc.decode:${oc.env:QDRANT_USE_HTTPS,false}}
+  timeout: ${oc.decode:${oc.env:QDRANT_TIMEOUT,30}}
+  embedding_size: ${oc.decode:${oc.env:EMBEDDING_SIZE,1024}}
 
 embedding:
-  host: localhost
-  port: 8081
-  model: BAAI/bge-large-zh-v1.5
+  # local：本地 TEI 推理服务；openai：任意 OpenAI 兼容的 embedding 接口
+  provider: ${oc.env:EMBEDDING_PROVIDER,local}
+  host: ${oc.env:EMBEDDING_HOST,localhost}
+  port: ${oc.decode:${oc.env:EMBEDDING_PORT,8081}}
+  model: ${oc.env:EMBEDDING_MODEL,BAAI/bge-large-zh-v1.5}
+  api_key: ${oc.env:EMBEDDING_API_KEY,""}
+  base_url: ${oc.env:EMBEDDING_API_BASE,""}
+  batch_size: ${oc.decode:${oc.env:EMBEDDING_BATCH_SIZE,20}}
+
+value_store:
+  # mysql：用 MySQL 的 ngram 全文索引兜住取值召回，免掉 ES 这层托管依赖
+  # es：保留原生 Elasticsearch 实现，依赖 IK 分词插件
+  provider: ${oc.env:VALUE_STORE_PROVIDER,mysql}
+  table_name: ${oc.env:VALUE_STORE_TABLE,value_index}
+  score_threshold: ${oc.decode:${oc.env:VALUE_SCORE_THRESHOLD,0.6}}
+  limit: ${oc.decode:${oc.env:VALUE_QUERY_LIMIT,20}}
 
 es:
-  host: localhost
-  port: 9200
-  index_name: data_agent
+  host: ${oc.env:ES_HOST,localhost}
+  port: ${oc.decode:${oc.env:ES_PORT,9200}}
+  index_name: ${oc.env:ES_INDEX_NAME,data_agent}
+
+cors:
+  # 前后端分离部署时前端与后端不同源（如前端在 Vercel、后端在 Render），
+  # 浏览器会拦截跨域请求，必须在这里显式放行前端来源。
+  # 多个来源用英文逗号分隔，例如：https://ec-bot.vercel.app,http://localhost:5173
+  allow_origins: ${oc.env:CORS_ALLOW_ORIGINS,""}
+  # 正则形式的来源，用于 Vercel 预览域名这类每次部署都会变化的地址，
+  # 例如：https://ec-bot-.*\.vercel\.app
+  allow_origin_regex: ${oc.env:CORS_ALLOW_ORIGIN_REGEX,""}
+  # 当前接口不依赖 Cookie 鉴权，保持关闭即可；开启后不能再用 * 作为来源
+  allow_credentials: ${oc.decode:${oc.env:CORS_ALLOW_CREDENTIALS,false}}
 
 llm:
   model_name: ${oc.env:MODEL_NAME}

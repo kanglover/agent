@@ -8,16 +8,16 @@
 
 import json
 
-from langchain_huggingface import HuggingFaceEndpointEmbeddings
+from langchain_core.embeddings import Embeddings
 
 from app.agent.context import DataAgentContext
 from app.agent.graph import graph
 from app.agent.state import DataAgentState
-from app.repositories.es.value_es_repository import ValueESRepository
 from app.repositories.mysql.dw.dw_mysql_repository import DWMySQLRepository
 from app.repositories.mysql.meta.meta_mysql_repository import MetaMySQLRepository
 from app.repositories.qdrant.column_qdrant_repository import ColumnQdrantRepository
 from app.repositories.qdrant.metric_qdrant_repository import MetricQdrantRepository
+from app.repositories.value.value_repository import ValueRepository
 
 
 class QueryService:
@@ -26,21 +26,21 @@ class QueryService:
     def __init__(
         self,
         meta_mysql_repository: MetaMySQLRepository,
-        embedding_client: HuggingFaceEndpointEmbeddings,
+        embedding_client: Embeddings,
         dw_mysql_repository: DWMySQLRepository,
         column_qdrant_repository: ColumnQdrantRepository,
         metric_qdrant_repository: MetricQdrantRepository,
-        value_es_repository: ValueESRepository,
+        value_repository: ValueRepository,
     ):
         # MySQL 仓储分别负责元数据补全和真实数仓环境信息读取
         self.meta_mysql_repository = meta_mysql_repository
         self.dw_mysql_repository = dw_mysql_repository
 
-        # 召回链路依赖的向量检索、Embedding 和全文检索能力由依赖层注入
+        # 召回链路依赖的向量检索、Embedding 和取值检索能力由依赖层注入
         self.embedding_client = embedding_client
         self.column_qdrant_repository = column_qdrant_repository
         self.metric_qdrant_repository = metric_qdrant_repository
-        self.value_es_repository = value_es_repository
+        self.value_repository = value_repository
 
     async def query(self, query: str):
         """执行一次问数工作流，并逐段产出 SSE 消息"""
@@ -52,7 +52,7 @@ class QueryService:
             column_qdrant_repository=self.column_qdrant_repository,
             embedding_client=self.embedding_client,
             metric_qdrant_repository=self.metric_qdrant_repository,
-            value_es_repository=self.value_es_repository,
+            value_repository=self.value_repository,
             meta_mysql_repository=self.meta_mysql_repository,
             dw_mysql_repository=self.dw_mysql_repository,
         )

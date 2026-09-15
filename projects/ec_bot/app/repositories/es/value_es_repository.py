@@ -57,14 +57,21 @@ class ValueESRepository:
             await self.client.bulk(operations=batch_operations)
 
     async def search(
-        self, keyword: str, score_threshold: float = 0.6, limit: int = 20
+        self,
+        keyword: str,
+        score_threshold: float | None = None,
+        limit: int | None = None,
     ) -> list[ValueInfo]:
-        """按关键词全文检索字段取值，返回得分高于阈值的字段取值列表"""
+        """按关键词全文检索字段取值，返回得分高于阈值的字段取值列表
+
+        这里的得分是 ES 的 BM25 分值，量纲与 MySQL 实现的 0~1 匹配度不同，
+        因此缺省阈值不取 value_store 配置，保持该实现原有的经验值。
+        """
 
         resp = await self.client.search(
             index=self.index_name,
             query={"match": {"value": keyword}},
-            size=limit,
-            min_score=score_threshold,
+            size=20 if limit is None else limit,
+            min_score=0.6 if score_threshold is None else score_threshold,
         )
         return [ValueInfo(**hit["_source"]) for hit in resp["hits"]["hits"]]

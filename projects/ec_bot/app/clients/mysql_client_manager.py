@@ -3,6 +3,7 @@ MySQL 客户端管理器
 """
 
 import asyncio
+import ssl as ssl_module
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
@@ -32,11 +33,34 @@ class MySQLClientManager:
         """
         return f"mysql+asyncmy://{self.config.user}:{self.config.password}@{self.config.host}:{self.config.port}/{self.config.database}?charset=utf8mb4"
 
+    def _get_connect_args(self) -> dict:
+        """
+        拼接驱动层连接参数
+
+        托管 MySQL（Aiven、TiDB Cloud 等）普遍强制 TLS，需要显式传入 SSLContext；
+        本地容器不开 TLS，直接返回空参数。
+        """
+        if not self.config.ssl:
+            return {}
+
+        context = ssl_module.create_default_context()
+        if not self.config.ssl_verify:
+            # 只保留链路加密、跳过证书链校验，用于云上证书链异常时兜底
+            context.check_hostname = False
+            context.verify_mode = ssl_module.CERT_NONE
+
+        return {"ssl": context}
+
     def init(self):
         """初始化 Engine 和 Session 工厂"""
         # 创建异步 Engine，相当于先把“数据库连接能力”准备好
+        # pool_recycle 让连接定期重连，避免云上中间层静默断开后取到失效连接
         self.engine = create_async_engine(
-            self._get_url(), pool_size=10, pool_pre_ping=True
+            self._get_url(),
+            pool_size=self.config.pool_size,
+            pool_pre_ping=True,
+            pool_recycle=self.config.pool_recycle,
+            connect_args=self._get_connect_args(),
         )
         # 基于 Engine 创建 Session 工厂，后面真正查库时再拿 session
         self.session_factory = async_sessionmaker(

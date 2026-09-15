@@ -13,7 +13,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import cast
 
-from langchain_huggingface import HuggingFaceEndpointEmbeddings
+from langchain_core.embeddings import Embeddings
 from omegaconf import OmegaConf
 
 from app.conf.meta_config import MetaConfig
@@ -23,7 +23,7 @@ from app.entities.column_metric import ColumnMetric
 from app.entities.metric_info import MetricInfo
 from app.entities.table_info import TableInfo
 from app.entities.value_info import ValueInfo
-from app.repositories.es.value_es_repository import ValueESRepository
+from app.repositories.value.value_repository import ValueRepository
 from app.repositories.mysql.dw.dw_mysql_repository import DWMySQLRepository
 from app.repositories.mysql.meta.meta_mysql_repository import MetaMySQLRepository
 from app.repositories.qdrant.column_qdrant_repository import ColumnQdrantRepository
@@ -38,8 +38,8 @@ class MetaKnowledgeService:
         meta_mysql_repository: MetaMySQLRepository,
         dw_mysql_repository: DWMySQLRepository,
         column_qdrant_repository: ColumnQdrantRepository,
-        embedding_client: HuggingFaceEndpointEmbeddings,
-        value_es_repository: ValueESRepository,
+        embedding_client: Embeddings,
+        value_repository: ValueRepository,
         metric_qdrant_repository: MetricQdrantRepository,
     ):
         # meta repository 负责结构化元数据的落库
@@ -49,9 +49,9 @@ class MetaKnowledgeService:
         # 字段向量集合的创建和写入统一交给 Qdrant Repository
         self.column_qdrant_repository: ColumnQdrantRepository = column_qdrant_repository
         # 向量化动作放在 Service 层
-        self.embedding_client: HuggingFaceEndpointEmbeddings = embedding_client
-        # 字段值全文索引的写入统一交给 ES Repository
-        self.value_es_repository: ValueESRepository = value_es_repository
+        self.embedding_client: Embeddings = embedding_client
+        # 字段值全文索引的写入统一交给取值检索仓储（ES 或 MySQL 实现由配置决定）
+        self.value_repository: ValueRepository = value_repository
         # 指标向量集合和字段向量集合分开管理，便于后续按对象类型独立召回
         self.metric_qdrant_repository: MetricQdrantRepository = metric_qdrant_repository
 
@@ -152,11 +152,11 @@ class MetaKnowledgeService:
 
         await self.column_qdrant_repository.upsert(ids, embeddings, payloads)
 
-    async def _save_value_info_to_es(
+    async def _save_value_info_to_store(
         self, meta_config: MetaConfig, column_infos: list[ColumnInfo]
     ):
-        """把允许同步的字段真实取值写入 Elasticsearch 全文索引"""
-        await self.value_es_repository.ensure_index()
+        """把允许同步的字段真实取值写入取值全文索引"""
+        await self.value_repository.ensure_index()
 
         if meta_config.tables is None:
             return
@@ -187,7 +187,7 @@ class MetaKnowledgeService:
                 ]
                 value_infos.extend(current_values_infos)
 
-        await self.value_es_repository.index(value_infos)
+        await self.value_repository.index(value_infos)
 
     async def _save_metrics_to_meta_db(
         self, meta_config: MetaConfig
@@ -287,7 +287,7 @@ class MetaKnowledgeService:
             await self._save_column_info_to_qdrant(column_infos)
             logger.info("为字段信息建立向量索引")
             # 对指定的维度字段取值建立全文索引
-            await self._save_value_info_to_es(meta_config, column_infos)
+            await self._save_value_info_to_store(meta_config, column_infos)
             logger.info("为字段取值建立全文索引")
 
         # 根据配置文件同步指定的指标信息

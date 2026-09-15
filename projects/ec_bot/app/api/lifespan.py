@@ -17,6 +17,7 @@ from app.clients.mysql_client_manager import (
     meta_mysql_client_manager,
 )
 from app.clients.qdrant_client_manager import qdrant_client_manager
+from app.conf.app_config import app_config
 
 
 @asynccontextmanager
@@ -26,9 +27,12 @@ async def lifespan(app: FastAPI):
     # 启动阶段：先建立各类外部服务客户端，后续依赖函数会从 manager 中取已初始化对象
     qdrant_client_manager.init()
     embedding_client_manager.init()
-    es_client_manager.init()
     meta_mysql_client_manager.init()
     dw_mysql_client_manager.init()
+
+    # 取值召回走 MySQL 全文索引时不需要 ES，避免白白维护一套用不上的客户端
+    if app_config.value_store.provider == "es":
+        es_client_manager.init()
 
     # yield 之前是启动逻辑，yield 之后是关闭逻辑；中间阶段由 FastAPI 正常处理请求
     yield
