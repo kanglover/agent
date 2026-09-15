@@ -2,7 +2,10 @@
 #
 # 本仓库是 monorepo，问数智能体在 projects/ec_bot 下，因此每个服务都用 rootDir 指过去。
 # 用法：Render 控制台 → New → Blueprint → 选本仓库，会自动读取这个文件。
-# 如果后续把 projects/ec_bot 拆成独立仓库，把 rootDir 删掉即可。
+#
+# 部署分支说明：
+#   当前部署走的是 deploy/render-vercel 分支（尚未合并回 main）。
+#   等你把该分支合并进 main 之后，把下面 service 里的 branch 改成 main 即可。
 
 services:
   # 后端 API：免费 Docker 实例，取值召回走 MySQL 全文索引，不依赖 Elasticsearch
@@ -11,7 +14,7 @@ services:
     runtime: docker
     plan: free
     region: singapore
-    branch: main
+    branch: deploy/render-vercel
     rootDir: projects/ec_bot
     dockerfilePath: ./Dockerfile
     dockerContext: .
@@ -42,6 +45,11 @@ services:
       # 托管 MySQL 强制 TLS
       - key: META_DB_SSL
         value: true
+      # Aiven 用自签 CA，系统信任库里没有，开启证书链校验会直接连不上
+      # （CERTIFICATE_VERIFY_FAILED: self-signed certificate in certificate chain）。
+      # 这里跳过校验、保留链路加密；升级方式见 docs/DEPLOY_RENDER_VERCEL.md
+      - key: DB_SSL_VERIFY
+        value: false
       # 数仓库（可与元数据库同实例，仅库名不同）
       - key: DW_DB_HOST
         sync: false
